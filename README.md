@@ -1,3 +1,11 @@
+## CARA INSTALL SCRIPT SINGGAH VPN
+
+
+### 1. DAFTARKAN DAHULU IP VPS YANG AKAN KITA INSTAL DI LINK BERIKUT INI 
+
+>>>>>>>>       https://github.com/Anggabayuwijaya599/ijin/blob/main/ipvps               <<<<<<<<<<
+
+
 #### DOWNGRADE XRAY 
 
 
