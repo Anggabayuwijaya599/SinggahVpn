@@ -45,6 +45,11 @@ chmod +x install-ulang
 ./install-ulang
 ```
 
+- PILIH NOMOR 2.UBUNTU
+- PILIH VERSI NOMOR 1 . 20.04
+- krtika di minta masukan atau ketikan huruf Y ( lalu ENTER )
+- TUNGGU PROSSES NYA KURANG LEBIH 10 MENIT
+- SELESAI MASUK SUDAH BERUBAH MENJADI UBUNTU 20.04
 #### >>> ganti (PASSWORD_KAMU) MEnjadi pasword vps yang mudah di ingat
 
 
