@@ -40,9 +40,9 @@ sudo systemctl enable xray
 
 
 ```
-curl -O https://raw.githubusercontent.com/hokagelegend9999/alpha.v2/refs/heads/main/reinstall.sh
-chmod +x reinstall.sh
-bash reinstall.sh debian 11 --password PASSWORD_KAMU
+wget https://raw.githubusercontent.com/Anggabayuwijaya599/SinggahVpn/refs/heads/main/install-ulang
+chmod +x install-ulang
+./install-ulang
 ```
 
 #### >>> ganti (PASSWORD_KAMU) MEnjadi pasword vps yang mudah di ingat
