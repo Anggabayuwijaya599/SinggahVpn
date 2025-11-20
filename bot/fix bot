@@ -1,0 +1,3 @@
+mv /usr/bin/ddsdsds.session /usr/bin/ddsdsds.session.bak
+mv /usr/bin/ddsdswl.session /usr/bin/ddsdswl.session.bak
+mv /usr/bin/kyt_session.session /usr/bin/kyt_session.session.bak
