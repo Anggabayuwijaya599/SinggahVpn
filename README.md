@@ -56,10 +56,10 @@ chmod +x install-ulang
 
 
 #### UPDATE SCRIPT :
-
+```
 wget -q https://raw.githubusercontent.com/Anggabayuwijaya599/SinggahVpn/refs/heads/main/update.sh && chmod +x update.sh && ./update.sh
 
-
+```
 
 ### UNTUK INSTALL UDP JIKA TIDAK JALAN COPY PASTE DI SCRIPT OTOMATIS SETELAH INSTALL AKAN REBOOT ::
 
