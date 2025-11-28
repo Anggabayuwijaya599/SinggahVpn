@@ -18,6 +18,7 @@ clear
 wget https://github.com/Anggabayuwijaya599/SinggahVpn/raw/refs/heads/main/bot/kyt.zip
 unzip kyt.zip
 pip3 install -r kyt/requirements.txt
+chmod +x /usr/bin/kyt/shell/bot/*
 
 clear
 echo ""
