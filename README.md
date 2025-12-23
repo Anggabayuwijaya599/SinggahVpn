@@ -133,7 +133,7 @@ reboot
 
 ```
 cd root
-wget https://raw.githubusercontent.com/hokagelegend9999/install/refs/heads/main/zivpn
+wget https://github.com/Anggabayuwijaya599/SinggahVpn/raw/refs/heads/main/zivpn
 chmod +x zivpn
 ./zivpn
 ```
