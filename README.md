@@ -129,4 +129,13 @@ reboot
 ```
 
 
+#Install ZIVPN
+
+```
+cd root
+wget https://raw.githubusercontent.com/hokagelegend9999/install/refs/heads/main/zivpn
+chmod +x zivpn
+./zivpn
+```
+
 
