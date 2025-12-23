@@ -129,7 +129,7 @@ reboot
 ```
 
 
-#Install ZIVPN
+# Install ZIVPN
 
 ```
 cd root
