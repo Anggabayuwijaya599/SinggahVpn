@@ -1,107 +1,6 @@
-#!/bin/bash
-# ==========================================
-#   ZIVPN AUTO INSTALLER PREMIUM (FINAL FIX)
-#   Fixed: Binary Rename & Command Path
-# ==========================================
-
-# Warna
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-clear
-echo -e "${BLUE}=================================================${NC}"
-echo -e "${YELLOW}       INSTALLER ZIVPN PREMIUM (FINAL)          ${NC}"
-echo -e "${BLUE}=================================================${NC}"
-echo ""
-
-# 1. Update & Install Dependencies
-echo -e "${GREEN}[1/8] Update Repository & Install Tools...${NC}"
-apt-get update -y > /dev/null 2>&1
-apt-get install -y wget curl jq openssl net-tools bc iptables-persistent > /dev/null 2>&1
-
-# 2. Stop Service Lama & Bersihkan File Konflik
-systemctl stop zivpn > /dev/null 2>&1
-rm -f /usr/local/bin/zivpn       # Hapus binary lama yang namanya bentrok
-rm -f /usr/bin/zivpn             # Hapus shortcut lama
-
-# 3. Download Binary ZIVPN (Disimpan sbg zivpn-core)
-echo -e "${GREEN}[2/8] Download Core ZIVPN...${NC}"
-wget -q https://github.com/zahidbd2/udp-zivpn/releases/download/udp-zivpn_1.4.9/udp-zivpn-linux-amd64 -O /usr/local/bin/zivpn-core
-chmod +x /usr/local/bin/zivpn-core
-
-# 4. Setup Config & Database
-echo -e "${GREEN}[3/8] Mengkonfigurasi Database...${NC}"
-mkdir -p /etc/zivpn
-
-# Backup config lama
-if [ -f /etc/zivpn/config.json ]; then
-    cp /etc/zivpn/config.json /etc/zivpn/config.json.backup
-fi
-
-# Generate Certificate
-rm -f /etc/zivpn/zivpn.crt /etc/zivpn/zivpn.key
-openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=ID/ST=Jakarta/L=Jakarta/O=ZIVPN/OU=Premium/CN=zivpn" -keyout "/etc/zivpn/zivpn.key" -out "/etc/zivpn/zivpn.crt" > /dev/null 2>&1
-
-# Buat Config Utama
-cat <<EOF > /etc/zivpn/config.json
-{
-  "listen": ":5667",
-  "cert": "/etc/zivpn/zivpn.crt",
-  "key": "/etc/zivpn/zivpn.key",
-  "obfs": "zivpn",
-  "auth": {
-    "mode": "passwords",
-    "config": []
-  }
-}
-EOF
-
-# User DB
-if [ ! -f /etc/zivpn/user-db.json ]; then
-    echo "{}" > /etc/zivpn/user-db.json
-fi
-
-# 5. Auto-Sync User SSH
-echo -e "${GREEN}[4/8] Sinkronisasi User SSH ke ZIVPN...${NC}"
-SSH_DB="/etc/ssh/.ssh.db"
-CONFIG_FILE="/etc/zivpn/config.json"
-USER_DB="/etc/zivpn/user-db.json"
-
-if [ -f "$SSH_DB" ]; then
-    grep "^#ssh#" "$SSH_DB" | while read -r line; do
-        user=$(echo $line | awk '{print $2}')
-        quota=$(echo $line | awk '{print $4}')
-        ip=$(echo $line | awk '{print $5}')
-        exp_raw=$(echo $line | cut -d ' ' -f 6-)
-        exp_date=$(date -d "$exp_raw" +%Y-%m-%d 2>/dev/null)
-        if [[ -z "$exp_date" ]]; then exp_date=$(date +%Y-%m-%d); fi
-
-        if [[ -n "$user" ]]; then
-            cp "$CONFIG_FILE" "${CONFIG_FILE}.tmp"
-            jq --arg u "$user" '.auth.config += [$u]' "${CONFIG_FILE}.tmp" > "$CONFIG_FILE"
-            
-            [ -z "$quota" ] && quota=0
-            [ -z "$ip" ] && ip=2
-            cp "$USER_DB" "${USER_DB}.tmp"
-            jq --arg u "$user" --arg e "$exp_date" --arg i "$ip" --arg q "$quota" \
-               '.[$u] = {exp: $e, ip: $i, quota: $q}' "${USER_DB}.tmp" > "$USER_DB"
-        fi
-    done
-fi
-
-# Default User
-cp "$CONFIG_FILE" "${CONFIG_FILE}.tmp"
-jq '.auth.config += ["zivpn"]' "${CONFIG_FILE}.tmp" > "$CONFIG_FILE"
-rm -f /etc/zivpn/*.tmp
-
-# 6. Install Menu (Disimpan sbg zivpn-menu)
-echo -e "${GREEN}[5/8] Menginstall Menu Manager V3...${NC}"
 cat << 'EOF' > /usr/local/bin/zivpn-menu
 #!/bin/bash
-# ZIVPN MENU MANAGER - V3 FIXED
+# ZIVPN MENU MANAGER - V3.2 (SYSTEM USER SYNC)
 
 CONFIG_FILE="/etc/zivpn/config.json"
 USER_DB="/etc/zivpn/user-db.json"
@@ -120,17 +19,21 @@ function restart_service() { systemctl restart "$SERVICE_NAME"; }
 function show_main_menu() {
     clear
     if [ -f /etc/os-release ]; then MODEL2=$(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/[=PRETTY_NAME"]//g'); else MODEL2="Linux OS"; fi
-    if free -h | grep -q "MiB"; then tram=$(free -h | awk '/Mem:/ {print $2}'); uram=$(free -h | awk '/Mem:/ {print $3}'); else tram=$(free -m | awk '/Mem:/ {print $2 "MB"}'); uram=$(free -m | awk '/Mem:/ {print $3 "MB"}'); fi
     IP_VPS=$(curl -s --connect-timeout 2 ipv4.icanhazip.com)
     if systemctl is-active --quiet "$SERVICE_NAME"; then status_zivpn="${GREEN}ON${NC}"; else status_zivpn="${RED}OFF${NC}"; fi
     
+    # Hitung user sistem (UID>=1000)
+    total_ssh=$(awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd | wc -l)
+    total_zivpn=$(jq '.auth.config | length' "$CONFIG_FILE")
+
     echo -e "${GREEN}╭═══════════════════════════════════════════════════╮${NC}"
     echo -e "${GREEN}│${NC} ${WH}            • ZIVPN PREMIUM MANAGER •            ${NC} ${GREEN}│${NC}"
     echo -e "${GREEN}╰═══════════════════════════════════════════════════╯${NC}"
     echo -e "${GREEN}╭═══════════════════════════════════════════════════╮${NC}"
     echo -e "${GREEN}│ ${WH}OS System      : ${GREEN}$MODEL2${NC}"
     echo -e "${GREEN}│ ${WH}IP VPS         : ${CYAN}$IP_VPS${NC}"
-    echo -e "${GREEN}│ ${WH}RAM Usage      : ${CYAN}$uram / $tram${NC}"
+    echo -e "${GREEN}│ ${WH}Total SSH Sys  : ${YELLOW}$total_ssh User${NC}"
+    echo -e "${GREEN}│ ${WH}Total ZiVPN    : ${YELLOW}$total_zivpn User${NC}"
     echo -e "${GREEN}╰═══════════════════════════════════════════════════╯${NC}"
     echo -e "${BLUE}╔════════════════════════════════════════════════════╗${NC}"
     echo -e "${BLUE}║${CYAN}         🚀   S T A T U S   S E R V I C E   🚀        ${BLUE}║${NC}"
@@ -140,12 +43,71 @@ function show_main_menu() {
     echo -e "${GREEN}╭═══════════════════════════════════════════════════╮${NC}"
     echo -e "${GREEN}│                    ${WH}MENU UTAMA${NC}                     ${GREEN}│${NC}"
     echo -e "${GREEN}├───────────────────────────────────────────────────┤${NC}"
-    echo -e "${GREEN}│ ${WH}[1] Buat User Baru (SSH/UDP)      ${WH}[4] Hapus User       ${GREEN}│${NC}"
-    echo -e "${GREEN}│ ${WH}[2] List User & Info Detail       ${WH}[5] Cek Service      ${GREEN}│${NC}"
-    echo -e "${GREEN}│ ${WH}[3] Perpanjang Masa Aktif         ${WH}[6] Hapus Expired    ${GREEN}│${NC}"
-    echo -e "${GREEN}│ ${WH}                                  ${WH}[0] Exit             ${GREEN}│${NC}"
+    echo -e "${GREEN}│ ${WH}[1] Buat User Baru (SSH/UDP)      ${WH}[5] Cek Service      ${GREEN}│${NC}"
+    echo -e "${GREEN}│ ${WH}[2] List User & Info Detail       ${WH}[6] Hapus Expired    ${GREEN}│${NC}"
+    echo -e "${GREEN}│ ${WH}[3] Perpanjang Masa Aktif         ${WH}[7] SYNC USER SSH    ${GREEN}│${NC}"
+    echo -e "${GREEN}│ ${WH}[4] Hapus User                    ${WH}[0] Exit             ${GREEN}│${NC}"
     echo -e "${GREEN}╰═══════════════════════════════════════════════════╯${NC}"
-    echo -ne "  ${WH}Masukkan pilihan Anda [0-6]: ${NC}"
+    echo -ne "  ${WH}Masukkan pilihan Anda [0-7]: ${NC}"
+}
+
+function sync_ssh_users() {
+    echo -e "\n${CYAN}[ Sinkronisasi User System Linux ke ZiVPN ]${NC}"
+    echo -e "Mohon tunggu, sedang membaca user system (/etc/passwd)..."
+    
+    count_added=0
+    
+    # Loop membaca /etc/passwd
+    while read -r output_passwd; do
+        AKUN=$(echo $output_passwd | cut -d: -f1)
+        ID=$(echo $output_passwd | cut -d: -f3)
+
+        # Filter: Hanya User ID >= 1000 dan bukan 'nobody'
+        if [[ $ID -ge 1000 && "$AKUN" != "nobody" ]]; then
+            
+            # Cek apakah user sudah ada di ZIVPN
+            if ! jq -e ".auth.config | index(\"$AKUN\")" "$CONFIG_FILE" > /dev/null; then
+                
+                # Cek Expiry Date dari Sistem (chage)
+                EXP_RAW=$(chage -l "$AKUN" | grep "Account expires" | cut -d: -f2)
+                
+                # Konversi tanggal
+                if [[ "$EXP_RAW" == *"never"* ]]; then
+                   # Jika never expired, set 1 tahun
+                   EXP_DATE=$(date -d "+365 days" +%Y-%m-%d)
+                else
+                   # Coba format tanggal dari chage
+                   EXP_DATE=$(date -d "$EXP_RAW" +%Y-%m-%d 2>/dev/null)
+                   
+                   # Jika gagal parsing, set default 30 hari
+                   if [[ -z "$EXP_DATE" ]]; then
+                       EXP_DATE=$(date -d "+30 days" +%Y-%m-%d)
+                   fi
+                fi
+
+                # Masukkan ke Config ZiVPN
+                cp "$CONFIG_FILE" "${CONFIG_FILE}.tmp"
+                jq --arg u "$AKUN" '.auth.config += [$u]' "${CONFIG_FILE}.tmp" > "$CONFIG_FILE"
+                
+                # Masukkan ke DB ZiVPN
+                cp "$USER_DB" "${USER_DB}.tmp"
+                jq --arg u "$AKUN" --arg e "$EXP_DATE" --arg i "2" --arg q "0" \
+                   '.[$u] = {exp: $e, ip: $i, quota: $q}' "${USER_DB}.tmp" > "$USER_DB"
+                   
+                echo -e " - Import: ${GREEN}$AKUN${NC} (Exp: $EXP_DATE)"
+                ((count_added++))
+            fi
+        fi
+    done < /etc/passwd
+
+    rm -f /etc/zivpn/*.tmp
+    if [ $count_added -gt 0 ]; then
+        restart_service
+        echo -e "\n${GREEN}Sukses! Berhasil menambahkan $count_added user dari sistem.${NC}"
+    else
+        echo -e "\n${YELLOW}Semua user sistem sudah tersinkronisasi.${NC}"
+    fi
+    read -n 1 -s -r -p "Enter..."
 }
 
 function add_user() {
@@ -232,64 +194,10 @@ while true; do
     show_main_menu
     read -r choice
     case $choice in
-        1) add_user ;; 2) list_users ;; 3) renew_user ;; 4) del_user ;; 5) clear; journalctl -u "$SERVICE_NAME" -f -n 20 ;; 6) delete_expired ;; 0) exit 0 ;; *) sleep 1 ;;
+        1) add_user ;; 2) list_users ;; 3) renew_user ;; 4) del_user ;; 5) clear; journalctl -u "$SERVICE_NAME" -f -n 20 ;; 6) delete_expired ;; 
+        7) sync_ssh_users ;; 
+        0) exit 0 ;; *) sleep 1 ;;
     esac
 done
 EOF
-
-# 7. Membuat Shortcut Command (Final)
-echo -e "${GREEN}[6/8] Membuat Shortcut Command...${NC}"
 chmod +x /usr/local/bin/zivpn-menu
-
-# Buat shortcut: ketik 'zivpn' memanggil 'zivpn-menu'
-ln -sf /usr/local/bin/zivpn-menu /usr/bin/zivpn
-chmod +x /usr/bin/zivpn
-
-# Bersihkan cache lokasi command
-hash -r
-
-# 8. Setup Systemd (Menggunakan zivpn-core)
-echo -e "${GREEN}[7/8] Membuat Service...${NC}"
-cat <<EOF > /etc/systemd/system/zivpn.service
-[Unit]
-Description=ZIVPN UDP Server
-After=network.target
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/etc/zivpn
-ExecStart=/usr/local/bin/zivpn-core server -c /etc/zivpn/config.json
-Restart=always
-RestartSec=3
-Environment=ZIVPN_LOG_LEVEL=info
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
-AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
-NoNewPrivileges=true
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# 9. Firewall & Start
-echo -e "${GREEN}[8/8] Setup Firewall & Start...${NC}"
-sysctl -w net.ipv4.ip_forward=1 > /dev/null 2>&1
-echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
-
-NIC=$(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1)
-iptables -t nat -F
-iptables -t nat -A PREROUTING -i $NIC -p udp --dport 6000:19999 -j DNAT --to-destination :5667
-iptables -A INPUT -p udp --dport 5667 -j ACCEPT
-netfilter-persistent save > /dev/null 2>&1
-
-systemctl daemon-reload
-systemctl enable zivpn
-systemctl restart zivpn
-
-clear
-echo -e "${BLUE}=================================================${NC}"
-echo -e "${GREEN}      INSTALASI SELESAI & COMMAND SIAP           ${NC}"
-echo -e "${BLUE}=================================================${NC}"
-echo -e " - Menu SSH Lama Anda : Tetap ketik ${YELLOW}menu${NC}"
-echo -e " - Menu ZiVPN Baru    : Ketik ${YELLOW}zivpn${NC}"
-echo -e "${BLUE}=================================================${NC}"
