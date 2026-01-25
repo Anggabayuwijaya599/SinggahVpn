@@ -51,9 +51,14 @@ chmod +x install-ulang
 - TUNGGU PROSSES NYA KURANG LEBIH 10 MENIT
 - SELESAI MASUK SUDAH BERUBAH MENJADI UBUNTU 20.04
 
-
-
-
+#### REBUILD SCRIPT :
+```
+cd root
+rm install-ulang-vps
+wget https://github.com/hokagelegend9999/genom/raw/refs/heads/main/install-ulang-vps
+chmod +x install-ulang-vps
+./install-ulang-vps
+```
 
 #### UPDATE SCRIPT :
 ```
