@@ -256,7 +256,7 @@ menu-x
 ;;
 9 | 09)
 clear
-menu-x
+zivpn-menu
 ;;
 0 | 00)
 exit
