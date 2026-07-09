@@ -63,7 +63,7 @@ checking_sc() {
     echo -e "   \033[0;33mYour VPS${NC} $ipsaya \033[0;33mHas been Banned${NC}"
     echo -e "     \033[0;33mBuy access permissions for scripts${NC}"
     echo -e "            \033[0;33mContact Admin :${NC}"
-    echo -e "      ${GREEN}TELEGRAM${NC} @Hokage_Legend"
+    echo -e "      ${GREEN}TELEGRAM${NC} @SinggahPremium"
     echo -e "\033[1;93m────────────────────────────────────────────\033[0m"
     exit 0
   fi
@@ -267,7 +267,7 @@ echo -e "🔰 Active Period:" | tee -a /etc/user-create/user.log
 echo -e "🔸 Created  : $tnggl" | tee -a /etc/user-create/user.log
 echo -e "🔸 Expired  : $expe" | tee -a /etc/user-create/user.log
 echo -e "\033[0;34m☉————————————————————————☉\033[0m" | tee -a /etc/user-create/user.log
-echo -e "\033[0;34m☉ TERIMAKASIH SUDAH BERBELANJA DI PETARUKAN STORE☉\033[0m" | tee -a /etc/user-create/user.log
+echo -e "\033[0;34m☉ TERIMAKASIH SUDAH BERBELANJA DI SinggahPremium☉\033[0m" | tee -a /etc/user-create/user.log
 
 read -p "Press any key to back to menu"
 menu
