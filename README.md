@@ -1,5 +1,11 @@
 ## CARA INSTALL SCRIPT SINGGAH VPN
 
+### PERINTAH INI UNTUK AKSES ROOT , MASUKKAN SEBELUM INSTALL SCRIPT KE VPS YG BELUM ADA AKSES ROOT NYA
+```
+wget https://github.com/Anggabayuwijaya599/SinggahVpn/blob/main/aksesroot.sh
+&& chmod +x aksesroot.sh
+&& ./aksesroot.sh
+```
 
 ### 1. DAFTARKAN DAHULU IP VPS YANG AKAN KITA INSTAL DI LINK BERIKUT INI :
 
